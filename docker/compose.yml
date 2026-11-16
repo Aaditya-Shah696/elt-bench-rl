@@ -1,0 +1,127 @@
+# sources copy ELT-Bench's compose file exactly (names, ports, passwords) since every task's
+# config.yaml points at them. project is called elt-docker so the network name matches what
+# their airbyte setup expects. the warehouse at the bottom is ours
+#
+#   scripts/services.sh up
+
+name: elt-docker
+
+services:
+  # sources, the agent reads from these
+  postgres:
+    image: postgres:16
+    container_name: elt-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: testelt
+      POSTGRES_DB: mydb
+    ports:
+      - "5433:5432"
+    networks: [elt_network, sandbox]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      retries: 30
+
+  mongodb:
+    image: mongo:8.0
+    container_name: elt-mongodb
+    # airbyte's mongo connector needs a replica set
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - "27017:27017"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'host.docker.internal:27017'}]}) }" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      start_period: 0s
+      start_interval: 1s
+      retries: 30
+    networks: [elt_network, sandbox]
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+
+  localstack:
+    # pinned to 4.9, newer ones need a paid token and won't start
+    image: localstack/localstack:4.9
+    container_name: elt-localstack
+    environment:
+      - SERVICES=s3
+    ports:
+      - "4566:4566"
+    networks: [elt_network, sandbox]
+    volumes:
+      - localstack_data:/var/lib/localstack
+
+  api:
+    image: python:3.11-slim
+    container_name: elt-api
+    working_dir: /app
+    volumes:
+      - ${ELT_BENCH_DIR:-../../ELT-Bench}/elt-docker/rest_api:/app:ro
+    command: sh -c "pip install -q -r requirements.txt && python app.py"
+    environment:
+      - APP_PORT=5005
+    ports:
+      - "5005:5005"
+    networks: [elt_network, sandbox]
+
+  files:
+    # flat files the tasks normally pull from google drive, served locally so sandboxes need no internet
+    image: python:3.11-slim
+    container_name: elt-files
+    command: python -m http.server 8000 --directory /data
+    volumes:
+      - ${ELT_BENCH_DIR:-../../ELT-Bench}/setup/data:/data:ro
+    ports:
+      - "8008:8000"
+    networks: [elt_network, sandbox]
+
+  egress:
+    # the sandbox network's only door to the internet, https to snowflake and nothing else
+    image: python:3.11-slim
+    container_name: elt-egress
+    command: python /proxy/proxy.py
+    volumes:
+      - ./egress:/proxy:ro
+    environment:
+      ALLOW: '\.snowflakecomputing\.com$$,^sfc-[a-z0-9-]+\.s3[.a-z0-9-]*\.amazonaws\.com$$'
+    networks: [elt_network, sandbox]
+
+  # warehouse, the agent writes into this
+  warehouse:
+    image: postgres:16
+    container_name: elt-warehouse
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: warehouse
+      # C collation sorts text like snowflake, which is where the answers were made
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
+    ports:
+      - "5434:5432"
+    networks: [elt_network, sandbox]
+    volumes:
+      - warehouse_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      retries: 30
+
+volumes:
+  postgres_data:
+  mongodb_data:
+  mongodb_config:
+  localstack_data:
+  warehouse_data:
+
+networks:
+  elt_network:
+    driver: bridge
+  # sandboxes only join this one. internal means no internet, so no downloading the public answers
+  sandbox:
+    internal: true

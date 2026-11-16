@@ -1,0 +1,23 @@
+# reference extract + load for books, every source table from config.yaml
+sources:
+  postgres: {type: postgres, host: elt-postgres, port: 5432, database: books, user: postgres, password: testelt}
+  mongodb: {type: mongodb, connection_string: "mongodb://elt-mongodb:27017/?directConnection=true", database: books}
+  aws_s3: {type: aws_s3, endpoint_url: "http://elt-localstack:4566", access_key_id: test, secret_access_key: test, region: us-west-2}
+  custom_api: {type: custom_api, base_url: "http://elt-api:5005"}
+  flat_files: {type: flat_files}
+streams:
+  - {source: postgres, table: address}
+  - {source: postgres, table: cust_order}
+  - {source: postgres, table: customer_address}
+  - {source: postgres, table: order_history}
+  - {source: postgres, table: order_line}
+  - {source: mongodb, collection: author}
+  - {source: mongodb, collection: book}
+  - {source: mongodb, collection: customer}
+  - {source: aws_s3, path: "s3://books-bucket/country.csv"}
+  - {source: aws_s3, path: "s3://books-bucket/shipping_method.csv"}
+  - {source: custom_api, path: /books/book_author}
+  - {source: custom_api, path: /books/book_language}
+  - {source: custom_api, path: /books/publisher}
+  - {source: flat_files, path: "http://elt-files:8000/books/address_status.jsonl"}
+  - {source: flat_files, path: "http://elt-files:8000/books/order_status.csv"}

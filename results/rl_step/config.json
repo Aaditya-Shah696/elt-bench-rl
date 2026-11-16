@@ -1,0 +1,76 @@
+{
+  "learning_rate": 0.0004905250962784578,
+  "dataset_builder": {
+    "tasks": [
+      "books"
+    ],
+    "model_name": "Qwen/Qwen3.5-4B",
+    "batch_size": 1,
+    "group_size": 4,
+    "renderer_name": "qwen3_5",
+    "env": {
+      "destination": "postgres",
+      "max_turns": 30,
+      "max_tool_calls": 60,
+      "max_trajectory_tokens": 49152,
+      "command_timeout": 300,
+      "replay": true,
+      "zero_reward_on_limit": false
+    }
+  },
+  "model_name": "Qwen/Qwen3.5-4B",
+  "recipe_name": "elt_rl",
+  "max_tokens": 4096,
+  "log_path": "~/tinker-runs/elt_rl/elt-Qwen-Qwen3.5-4B-books-g4x1-lr4.9e-04-2026-11-11-19-56",
+  "eval_every": 0,
+  "save_every": 5,
+  "evaluator_builders": [],
+  "load_checkpoint_path": null,
+  "renderer_name": "qwen3_5",
+  "wandb_project": null,
+  "wandb_name": "elt-Qwen-Qwen3.5-4B-books-g4x1-lr4.9e-04-2026-11-11-19-56",
+  "session_name": "elt-Qwen-Qwen3.5-4B-books-g4x1-lr4.9e-04-2026-11-11-19-56",
+  "kl_penalty_coef": 0.0,
+  "kl_discount_factor": 0.0,
+  "kl_reference_config": null,
+  "loss_fn": "importance_sampling",
+  "loss_fn_config": null,
+  "num_substeps": 1,
+  "lora_rank": 32,
+  "temperature": 1.0,
+  "compute_post_kl": false,
+  "remove_constant_reward_groups": false,
+  "rollout_error_tolerance": {
+    "max_retries": 2,
+    "per_rollout_timeout": 1800
+  },
+  "termination": {
+    "zero_reward_on_limit": false,
+    "limit_stop_reasons": [
+      "max_tokens",
+      "max_sampled_tokens",
+      "max_turns",
+      "max_tool_calls",
+      "rollout_timeout"
+    ],
+    "skip_grading_on_timeout": true,
+    "grader_timeout_seconds": 1800,
+    "pass_all_messages_to_grader": false
+  },
+  "enable_trace": false,
+  "span_chart_every": 0,
+  "async_config": {
+    "max_steps_off_policy": 1,
+    "groups_per_batch": 1,
+    "loss_fn": "stable_reinforce"
+  },
+  "stream_minibatch_config": null,
+  "base_url": null,
+  "ttl_seconds": 604800,
+  "rolling_save_every": 0,
+  "rolling_ttl_seconds": 7200,
+  "num_groups_to_log": 4,
+  "rollout_json_export": true,
+  "num_epochs": 1,
+  "max_steps": 1
+}

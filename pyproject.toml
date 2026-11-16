@@ -1,0 +1,52 @@
+[project]
+name = "elt-bench-rl"
+version = "0.1.0"
+description = "Tinker RLVR environment for ELT-Bench"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    # pinned to a commit so it doesn't change under us
+    "tinker-cookbook @ git+https://github.com/thinking-machines-lab/tinker-cookbook.git@8486b8df2fc32e9713cf96dd5f75d43c7ef70a17",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "psycopg[binary]>=3.1",
+    "pymongo>=4.6",
+    "pyyaml>=6.0",
+    "sqlalchemy>=2.0",
+    "snowflake-connector-python>=5.2.0",
+    "snowflake-sqlalchemy>=2.1.0",
+    "cryptography>=50.0.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["elt_rl"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "services: needs the Docker services from docker/compose.yml to be running",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.format]
+# exact copy of ELT-Bench's evaluator, leave its formatting alone so it still diffs against theirs
+exclude = ["elt_rl/grading/comparator.py"]
